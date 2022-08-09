@@ -1,9 +1,12 @@
-import spotipy
-import os
+import os, math, time, spotipy
+from queue import LifoQueue
 
 class SpotifyModule:
     def __init__(self, config):
         self.invalid = False
+        self.calls = 0
+        self.queue = LifoQueue()
+        self.config = config
         
         if config is not None and 'Spotify' in config and 'client_id' in config['Spotify'] \
             and 'client_secret' in config['Spotify'] and 'redirect_uri' in config['Spotify']:
@@ -11,14 +14,14 @@ class SpotifyModule:
             client_id = config['Spotify']['client_id']
             client_secret = config['Spotify']['client_secret']
             redirect_uri = config['Spotify']['redirect_uri']
-            if client_id is not "" and client_secret is not "" and redirect_uri is not "":
+            if client_id != "" and client_secret != "" and redirect_uri != "":
                 try:
                     os.environ["SPOTIPY_CLIENT_ID"] = client_id
                     os.environ["SPOTIPY_CLIENT_SECRET"] = client_secret
                     os.environ["SPOTIPY_REDIRECT_URI"] = redirect_uri
 
                     scope = "user-read-currently-playing, user-read-playback-state, user-modify-playback-state"
-                    self.auth_manager = spotipy.SpotifyOAuth(scope=scope)
+                    self.auth_manager = spotipy.SpotifyOAuth(scope=scope, open_browser=False)
                     print(self.auth_manager.get_authorize_url())
                     self.sp = spotipy.Spotify(auth_manager=self.auth_manager, requests_timeout=10)
                     self.isPlaying = False
@@ -32,16 +35,32 @@ class SpotifyModule:
             print("[Spotify Module] Missing config parameters")
             self.invalid = True
     
-    def isInvalid(self):
-        return self.invalid
+    def isDeviceWhitelisted(self):
+        if self.config is not None and 'Spotify' in self.config and 'device_whitelist' in self.config['Spotify']:
+            try:
+                devices = self.sp.devices()
+            except Exception as e:
+                print(e)
+                return False
+            
+            device_whitelist = self.config['Spotify']['device_whitelist']
+            for device in devices['devices']:
+                if device['name'] in device_whitelist and device['is_active']:
+                    return True
+            return False
+        else:
+            return True
 
     def getCurrentPlayback(self):
-        if self.invalid:
-            return None
+        # self.calls +=1
+        # print("spotify fetches: " + str(self.calls))
 
+        if self.invalid:
+            return
         try:
             track = self.sp.current_user_playing_track()
-            if (track is not None):
+
+            if (track is not None and self.isDeviceWhitelisted()):
                 if (track['item'] is None):
                     artist = None
                     title = None
@@ -53,75 +72,7 @@ class SpotifyModule:
                     title = track['item']['name']
                     art_url = track['item']['album']['images'][0]['url']
                 self.isPlaying = track['is_playing']
-                return (artist, title, art_url, self.isPlaying, track["progress_ms"], track["item"]["duration_ms"])
-            else:
-                return None
+
+                self.queue.put((artist, title, art_url, self.isPlaying, track["progress_ms"], track["item"]["duration_ms"]))
         except Exception as e:
             print(e)
-            return None
-    
-    def resume_playback(self):
-        if not self.invalid:
-            try:
-                self.sp.start_playback()
-            except spotipy.exceptions.SpotifyException:
-                print('no active, trying specific device')
-                devices = self.sp.devices()
-                if 'devices' in devices and len(devices['devices']) > 0:
-                    try:
-                        self.sp.start_playback(device_id = devices['devices'][0]['id'])
-                    except Exception as e:
-                        print(e)
-            except Exception as e:
-                print(e)
-    
-    def pause_playback(self):
-        if not self.invalid:
-            try:
-                self.sp.pause_playback()
-            except spotipy.exceptions.SpotifyException:
-                print('problem pausing')
-            except Exception as e:
-                print(e)
-
-    def next_track(self):
-        if not self.invalid:
-            try:
-                self.sp.next_track()
-            except spotipy.exceptions.SpotifyException:
-                print('no active, trying specific device')
-                devices = self.sp.devices()
-                if 'devices' in devices and len(devices['devices']) > 0:
-                    self.sp.next_track(device_id = devices['devices'][0]['id'])
-            except Exception as e:
-                print(e)
-
-    def previous_track(self):
-        if not self.invalid:
-            try:
-                self.sp.previous_track()
-            except spotipy.exceptions.SpotifyException:
-                print('no active, trying specific device')
-                devices = self.sp.devices()
-                if 'devices' in devices and len(devices['devices']) > 0:
-                    self.sp.previous_track(device_id = devices['devices'][0]['id'])
-            except Exception as e:
-                print(e)
-
-    def increase_volume(self):
-        if not self.invalid and self.isPlaying:
-            try:
-                devices = self.sp.devices()
-                curr_volume = devices['devices'][0]['volume_percent']
-                self.sp.volume(min(100, curr_volume + 5))
-            except Exception as e:
-                print(e)
-
-    def decrease_volume(self):
-        if not self.invalid and self.isPlaying:
-            try:
-                devices = self.sp.devices()
-                curr_volume = devices['devices'][0]['volume_percent']
-                self.sp.volume(max(0, curr_volume - 5))
-            except Exception as e:
-                print(e)
