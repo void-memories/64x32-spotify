@@ -60,7 +60,7 @@ def main():
             frame = black_screen
 
         matrix.SetImage(frame)
-        time.sleep(0.05)
+        time.sleep(0.08)
 
 if __name__ == '__main__':
     try:

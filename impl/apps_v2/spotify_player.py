@@ -57,14 +57,15 @@ class SpotifyScreen:
             (artist, title, art_url, self.is_playing, progress_ms, duration_ms) = response
 
             if not self.is_playing:
-                self.title_animation_cnt = 0
-                self.artist_animation_cnt = 0
-                self.last_title_reset = math.floor(time.time())
-                self.last_artist_reset = math.floor(time.time())
                 if not self.paused:
                     self.paused_time = math.floor(time.time())
                     self.paused = True
             else:
+                if self.paused and self.current_art_img and self.current_art_img.size == (self.canvas_width, self.canvas_height):
+                    self.title_animation_cnt = 0
+                    self.artist_animation_cnt = 0
+                    self.last_title_reset = math.floor(time.time())
+                    self.last_artist_reset = math.floor(time.time())
                 self.paused_time = math.floor(time.time())
                 self.paused = False
 
@@ -109,7 +110,7 @@ class SpotifyScreen:
 
             text_length = self.canvas_width - 12
             x_offset = 1
-            spacer = "    "
+            spacer = "     "
 
             if title_len > text_length:
                 draw.text((x_offset-self.title_animation_cnt, 1), self.current_title + spacer + self.current_title, self.title_color, font = self.font)
