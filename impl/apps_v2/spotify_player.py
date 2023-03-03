@@ -3,7 +3,7 @@ from PIL import Image, ImageFont, ImageDraw
 from io import BytesIO
 
 class SpotifyScreen:
-    def __init__(self, config, modules, fullscreen = False):
+    def __init__(self, config, modules, fullscreen):
         self.modules = modules
 
         self.font = ImageFont.truetype("fonts/tiny.otf", 5)

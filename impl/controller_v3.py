@@ -1,17 +1,28 @@
-import os, inspect, sys, math, time, configparser
+import os, inspect, sys, math, time, configparser, argparse
 from PIL import Image
 
 from apps_v2 import spotify_player
 from modules import spotify_module
 
+
 def main():
     canvas_width = 64
     canvas_height = 64
 
-    # switch matrix library import if emulated
-    isEmulated = len(sys.argv) > 1
+    # get arguments
+    parser = argparse.ArgumentParser(
+                    prog = 'RpiSpotifyMatrixDisplay',
+                    description = 'Displays album art of currently playing song on an LED matrix')
 
-    if isEmulated:
+    parser.add_argument('-f', '--fullscreen', action='store_true', help='Always display album art in fullscreen')
+    parser.add_argument('-e', '--emulated', action='store_true', help='Run in a matrix emulator')
+    args = parser.parse_args()
+
+    is_emulated = args.emulated
+    is_full_screen_always = args.fullscreen
+
+    # switch matrix library import if emulated
+    if is_emulated:
         from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
     else:
         from rgbmatrix import RGBMatrix, RGBMatrixOptions
@@ -27,16 +38,16 @@ def main():
         print("no config file found")
         sys.exit()
 
-    # connect to spotify
+    # connect to Spotify and create display image
     modules = { 'spotify' : spotify_module.SpotifyModule(config) }
-    app_list = [ spotify_player.SpotifyScreen(config, modules) ]
+    app_list = [ spotify_player.SpotifyScreen(config, modules, is_full_screen_always) ]
 
     # setup matrix
     options = RGBMatrixOptions()
     options.hardware_mapping = config.get('Matrix', 'hardware_mapping', fallback='regular')
     options.rows = canvas_width
     options.cols = canvas_height
-    options.brightness = 100 if isEmulated else config.getint('Matrix', 'brightness', fallback=100)
+    options.brightness = 100 if is_emulated else config.getint('Matrix', 'brightness', fallback=100)
     options.gpio_slowdown = config.getint('Matrix', 'gpio_slowdown', fallback=1)
     options.limit_refresh_rate_hz = config.getint('Matrix', 'limit_refresh_rate_hz', fallback=0)
     options.drop_privileges = False
@@ -61,6 +72,7 @@ def main():
 
         matrix.SetImage(frame)
         time.sleep(0.08)
+
 
 if __name__ == '__main__':
     try:

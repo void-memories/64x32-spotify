@@ -28,15 +28,22 @@ A Spotify display for 64x64 RGB LED matrices
    - After successful authorization, play a song and the display will appear
 
 ## How to Run
-You can either run this project in an emulated state (separate window, browser, etc) or on an RGB LED matrix directly. Commands must be run from the impl/ directory.
+You can either run this project in an emulated state (separate window, browser, etc) or on an RGB LED matrix directly. Commands must be run from the `impl/` directory.
 
-- To run emulated (on a PC/laptop), include any argument:
-    - `python3 controller_v3.py e`
+- To run emulated (on a PC/laptop):
+    - `python3 controller_v3.py -e`
 - To run on a matrix (connected to a raspberry pi), run elevated:
     - `sudo python3 controller_v3.py`
 
+Options:
+| Argument | Default | Description |
+| :- | :- | :- |
+|`-e` , `--emulated`| false | Run in a matrix emulator |
+|`-f` , `--fullscreen`| false | Always display album art in full screen (64x64) |
+|`-h` , `--help`| false | Display help messages for arguments |
+
 ## Configuration
-Configuration is handled in the config.ini. I have included my own as a sample. 
+Configuration is handled in the config.ini. I have included my own as a sample.
 
 For Matrix configuration, see https://github.com/hzeller/rpi-rgb-led-matrix#changing-parameters-via-command-line-flags. More extensive customization can be done in impl/controller_v3.py directly.
 
