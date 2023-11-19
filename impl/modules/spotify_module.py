@@ -59,6 +59,7 @@ class SpotifyModule:
             return
         try:
             track = self.sp.current_user_playing_track()
+            print("NEXA",track)
 
             if (track is not None and self.isDeviceWhitelisted()):
                 if (track['item'] is None):
