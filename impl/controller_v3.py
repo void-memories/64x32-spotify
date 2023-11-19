@@ -6,7 +6,7 @@ from modules import spotify_module
 
 
 def main():
-    canvas_width = 64
+    canvas_width = 32
     canvas_height = 64
 
     # get arguments
